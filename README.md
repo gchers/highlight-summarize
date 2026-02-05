@@ -3,13 +3,11 @@
 
 This repository contains code for reproducing the experiments described in the H&S paper and running the H&S demo.
 
-
-
 ## Getting Started
 
 ```
 # Clone the git repository
-git clone https://github.com/microsoft/highlight-summarize
+git clone {redacted}
 
 # Create a Python virtual environment
 python3 -m venv .venv
@@ -54,6 +52,6 @@ To reproduce the experiments, head over to [reproduce](reproduce/).
 
 To check out the proofs of our theory section.
 
---------------------
+## LICENSE
 
-**Trademarks** This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow Microsoft’s Trademark & Brand Guidelines. Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party’s policies.
+Refer to the main branch of the repository for the license and usage terms. This was removed from this branch for anonymization purposes.

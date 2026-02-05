@@ -1,5 +1,4 @@
 Title: Highlight, then Summarize: RAG without the jailbreaks.
-Authors: Giovanni Cherubin (Microsoft), Andrew Paverd (Microsoft)
 
 Preventing model hijacking and jailbreaking is a troublesome problem in the deployment of Large Language Models (LLMs). In RAG
 systems, for example, malicious users can tamper with the LLM’s

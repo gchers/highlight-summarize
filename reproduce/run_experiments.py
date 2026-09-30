@@ -1,8 +1,18 @@
+"""Run the configured H&S experiments.
+
+Usage:
+    run_experiments.py [<config>]
+
+Arguments:
+    <config>  Experiment configuration [default: experiments.yaml]
+"""
+
 import os
 import yaml
 import time
 import datasets
 from typing import Any
+from docopt import docopt
 
 from highlight_summarize.qa import QAEvaluator
 from highlight_summarize.data import load_dataset
@@ -128,7 +138,12 @@ def run_judgement(
     This function would typically call the actual judgement logic.
     """
     judges = judges_config["judges"]
-    dst_dir = f"{run_id}/judgement"
+    dst_dir = os.path.join(
+        run_id,
+        judges_config.get(
+            "judgement_subdir", f"judgement-{judges_config['model_name']}"
+        ),
+    )
     # Try to load the existing results.
     if os.path.exists(dst_dir):
         print(
@@ -171,7 +186,8 @@ def run_judgement(
 
 
 if __name__ == "__main__":
-    config = load_config("experiments.yaml")
+    args = docopt(__doc__)
+    config = load_config(args["<config>"] or "experiments.yaml")
 
     for run_id, experiment_config in config["experiments"].items():
         os.makedirs(run_id, exist_ok=True)

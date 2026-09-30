@@ -38,3 +38,6 @@ models/
 *.log
 .DS_Store
 demo/chats_history.jsonl
+
+# Raw per-pipeline runs: only the processed Parquet files and pairwise comparisons are published
+reproduce/results/*/*/*/

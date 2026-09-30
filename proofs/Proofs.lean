@@ -20,7 +20,7 @@ over LLM outputs.
 - `controlRegion_card_bound` (Lemma): For any LLM L and threshold β, the control region
   satisfies |C_β(L)| ≤ |P|/β where P is the input space.
 
-- `hs_security_theorem` (Theorem): Consider an LLM L : Σ^K → Σ* and an H&S pipeline
+- `hs_security_theorem` (Theorem): Consider an LLM L : Σ^{≤K} → Δ(O) and an H&S pipeline
   L ∘ h_D on a document of length Len. Assuming |C_β(L)| ≥ α|P| for constants α,β ∈ (0,1],
   then |C_β(L ∘ h_D)| / |C_β(L)| = O(K·Len · |Σ|^{-K}).
 
@@ -188,7 +188,7 @@ def CoverageAssumption {Token : Type*} {K : ℕ} {O : Type*} [Fintype O]
     (L : LLM Token K O) (α β : ℝ) (P : Finset (InputSpace Token K)) : Prop :=
   α * P.card ≤ (ControlRegion L β P).card
 
-/-- **Main Security Theorem**: Consider an LLM L : Σ^K → Σ* and an H&S pipeline L ∘ h_D
+/-- **Main Security Theorem**: Consider an LLM L : Σ^{≤K} → Δ(O) and an H&S pipeline L ∘ h_D
     operating on a document of length Len. Assume there are constants α,β ∈ (0,1] such
     that |C_β(L)| ≥ α|P|. Then:
 

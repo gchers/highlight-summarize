@@ -22,6 +22,13 @@ They can then be found under the `results/` folder.
 We provide a notebook, `data-analysis.ipynb`, which enables
 recreating all our experiments' figures and tables.
 
+The results are organized by generation model: `results/<gen-model>/<dataset>/<dataset>_results_processed.parquet`
+holds the responses of every pipeline together with the ratings of every LLM judge, and the pairwise
+comparisons (gzipped JSON Lines, `comparison-*.jsonl.gz`) are under `results/<gen-model>-pairwise-<judge-model>/`. The notebook is parametrized
+by two variables at the top of its configuration cell, `GEN_MODEL` and `JUDGE_MODEL` (both
+default to `gpt-4.1-mini`); set them (e.g. to `gpt-5.4`) to analyze a different generator/judge
+combination.
+
 ## Re-run from scratch
 
 If instead you want to re-run the experiments from scratch, follow these steps.
@@ -42,18 +49,19 @@ the number of TCP connections never exceeded 2000, so this should work fine.
 
 After running this script, you should be able to run part of the jupyter notebook. (For the other part, look at the next sections.)
 
-**If** you want to obtain `.csv` files, similar to the ones we committed to the repo, use `results-to-csv.py`.
-However, this is only necessary if you want to remove any data from the HF datasets and make the files smaller.
+The runs are written to `results/<gen-model>/<dataset>/<pipeline>/`, with the judge ratings under `judgement-<judge-model>/`.
+The notebook reads the processed Parquet files by default: rebuild them from your runs with `python results-to-parquet.py`,
+or set `LOAD_RESULTS_FROM = "jsonl"` in the notebook to read the runs directly.
 
 ### Pairwise comparisons
 
 After running `run_experiments.py`, we can do pairwise comparisons via an LLM
 as a judge.
 In particular:
-- compare between highlighter vs HS: `python compare.py highlighter <run_folder>`. E.g., `python compare.py highlighter results/repliqa_3/HSBaseline-gpt-4.1-mini-gpt-4.1-mini`.
-- compare the pipelines 1-to-1: `python compare.py pairwise <dataset results folder>`. E.g., `python compare.py pairwise results/repliqa_3`.
+- compare between highlighter vs HS: `python compare.py highlighter <run_folder>`. E.g., `python compare.py highlighter results/gpt-4.1-mini/repliqa_3/HSBaseline-gpt-4.1-mini-gpt-4.1-mini`.
+- compare the pipelines 1-to-1: `python compare.py pairwise <dataset results folder>`. E.g., `python compare.py pairwise results/gpt-4.1-mini/repliqa_3`.
 
-**Note:** you'll need to remove the respective `comparison-` files under `results/` before running this, or your experiments may be skipped.
+**Note:** the comparisons are written under `results/<gen-model>-pairwise-<judge-model>/`; remove the respective `comparison-` files there before re-running, or they will be skipped.
 
 After running these, you'll be able to look at the results via the jupyter notebook.
 

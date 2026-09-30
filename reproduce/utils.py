@@ -4,8 +4,8 @@ import os
 import datasets
 
 
-def load_all_results(results_dir="results/") -> dict[str, datasets.Dataset]:
-    """Load all results from the results directory and combine them by dataset."""
+def load_all_results(results_dir, judgement_subdir) -> dict[str, datasets.Dataset]:
+    """Load and combine results from a selected judgement subdirectory."""
     combined_results = {}
 
     for dataset_name in os.listdir(results_dir):
@@ -18,7 +18,7 @@ def load_all_results(results_dir="results/") -> dict[str, datasets.Dataset]:
             if not os.path.isdir(os.path.join(results_dir, dataset_name, run_id)):
                 continue
 
-            dirname = os.path.join(results_dir, dataset_name, run_id, "judgement")
+            dirname = os.path.join(results_dir, dataset_name, run_id, judgement_subdir)
             if not os.path.isdir(dirname):
                 print(f"Skipping {run_id} as {dirname} doesn't exist.")
                 continue

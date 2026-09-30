@@ -13,12 +13,13 @@ Options:
     --workers=<workers>  Concurrent pairwise comparisons [default: 32]
 
 A `run_folder` is produced by `run_experiments.py` and it looks something like:
-`results/repliqa_3/HSBaseline-gpt-4.1-mini-gpt-4.1-mini`
-where `results/` is the base folder for the results, `repliqa_3` is the dataset name
-and `HSBaseline-gpt-4.1-mini-gpt-4.1-mini` is the pipeline.
+`results/gpt-4.1-mini/repliqa_3/HSBaseline-gpt-4.1-mini-gpt-4.1-mini`
+where `results/gpt-4.1-mini/` is the base folder for the generation results, `repliqa_3` is
+the dataset name and `HSBaseline-gpt-4.1-mini-gpt-4.1-mini` is the pipeline. Comparison
+outputs are written to `results/{gen}-pairwise-{judge}/{dataset}/`.
 
 The `results_for_dataset_folder` is the folder containing the results for a specific dataset,
-e.g. `results/repliqa_3`.
+e.g. `results/gpt-4.1-mini/repliqa_3`.
 """
 
 import os
@@ -50,6 +51,22 @@ def get_run_info(run_folder):
             f"This shouldn't happen. Base folder: {base_folder}, dataset name: {dataset_name}, pipeline: {pipeline}"
         )
     return base_folder, dataset_name, pipeline
+
+
+def pairwise_output_folder(base_folder, dataset_name, model_name):
+    """Directory for pairwise / highlighter comparison outputs.
+
+    Maps the generation results folder (e.g. ``results/gpt-5.4``) to
+    ``results/{gen}-pairwise-{judge}/{dataset}``, where the judge is derived
+    from ``model_name`` (any ``-batch`` suffix is stripped). The directory is
+    created if it does not exist.
+    """
+    judge = model_name.replace("-batch", "")
+    gen = os.path.basename(base_folder)
+    parent = os.path.dirname(base_folder)
+    out_dir = os.path.join(parent, f"{gen}-pairwise-{judge}", dataset_name)
+    os.makedirs(out_dir, exist_ok=True)
+    return out_dir
 
 
 def load_from_run(run_folder):
@@ -84,6 +101,12 @@ def pairwise_comparison(run_folder_1, run_folder_2, model_name="gpt-4.1-mini"):
     # Ensure that we're comparing the right things.
     base_folder_1, dataset_name_1, pipeline_1 = get_run_info(run_folder_1)
     base_folder_2, dataset_name_2, pipeline_2 = get_run_info(run_folder_2)
+    # Consistent naming
+    if pipeline_2 < pipeline_1:
+        run_folder_1, run_folder_2 = run_folder_2, run_folder_1
+        base_folder_1, base_folder_2 = base_folder_2, base_folder_1
+        dataset_name_1, dataset_name_2 = dataset_name_2, dataset_name_1
+        pipeline_1, pipeline_2 = pipeline_2, pipeline_1
     if base_folder_1 != base_folder_2:
         raise ValueError(
             "Base folders do not match: {} vs {}".format(base_folder_1, base_folder_2)
@@ -97,8 +120,9 @@ def pairwise_comparison(run_folder_1, run_folder_2, model_name="gpt-4.1-mini"):
             "Pipelines must be different: {} vs {}".format(pipeline_1, pipeline_2)
         )
 
+    out_dir = pairwise_output_folder(base_folder_1, dataset_name_1, model_name)
     output_fname = os.path.join(
-        base_folder_1, dataset_name_1, f"comparison-{pipeline_1}_vs_{pipeline_2}.jsonl"
+        out_dir, f"comparison-{pipeline_1}_vs_{pipeline_2}.jsonl.gz"
     )
     if os.path.exists(output_fname):
         print(f"Comparison file already exists: {output_fname}. Skipping.")
@@ -160,9 +184,7 @@ def pairwise_comparison(run_folder_1, run_folder_2, model_name="gpt-4.1-mini"):
         return
 
     # Run batch
-    batch_file = os.path.join(
-        base_folder_1, dataset_name_1, f"batch-{pipeline_1}_vs_{pipeline_2}.jsonl"
-    )
+    batch_file = os.path.join(out_dir, f"batch-{pipeline_1}_vs_{pipeline_2}.jsonl")
     results = []
     if batch_requests:
         print(f"Submitting batch with {len(batch_requests)} comparisons...")
@@ -203,8 +225,9 @@ def highlighter_comparison(run_folder, model_name="gpt-4.1-mini", limit_words=40
         f"Comparing highlighter output for dataset '{dataset_name}' and pipeline '{pipeline}'."
     )
 
+    out_dir = pairwise_output_folder(base_folder, dataset_name, model_name)
     output_fname = os.path.join(
-        base_folder, dataset_name, f"comparison-{pipeline}-highlighter_vs_hs.jsonl"
+        out_dir, f"comparison-{pipeline}-highlighter_vs_hs.jsonl.gz"
     )
     if os.path.exists(output_fname):
         print(f"Comparison file already exists: {output_fname}. Skipping.")
@@ -268,9 +291,7 @@ def highlighter_comparison(run_folder, model_name="gpt-4.1-mini", limit_words=40
         return
 
     # Run batch
-    batch_file = os.path.join(
-        base_folder, dataset_name, f"batch-{pipeline}-highlighter_vs_hs.jsonl"
-    )
+    batch_file = os.path.join(out_dir, f"batch-{pipeline}-highlighter_vs_hs.jsonl")
     results = []
     if batch_requests:
         print(f"Submitting batch with {len(batch_requests)} comparisons...")
@@ -319,7 +340,7 @@ def pairwise_comparisons(folder, pipelines, model_name, max_workers):
             print(f"Error comparing {pipeline_1} vs {pipeline_2}: {e}")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for _ in executor.map(compare, combinations(pipelines, 2)):
+        for _ in executor.map(compare, combinations(sorted(pipelines), 2)):
             pass
 
 

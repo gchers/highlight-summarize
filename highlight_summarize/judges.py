@@ -84,8 +84,8 @@ def patched_get_completion(
     messages: list[dict[str, str]],
     model: str,
     temperature: float,
-    max_tokens: int,
-    seed: int,
+    max_tokens: int | None,
+    seed: int | None,
     response_format: dict | None = None,
     response_model=None,
 ):
@@ -95,14 +95,20 @@ def patched_get_completion(
             "response_model is not supported in this context. Use response_format instead."
         )
 
-    return client.beta.chat.completions.parse(
+    completion_kwargs: dict[str, Any] = dict(
         model=model,
         messages=messages,  # type: ignore
         temperature=temperature,
-        max_tokens=max_tokens,
         seed=seed,
         response_format=response_format,  # type: ignore
     )
+    if max_tokens is not None:
+        token_parameter = (
+            "max_completion_tokens" if model.startswith("gpt-5") else "max_tokens"
+        )
+        completion_kwargs[token_parameter] = max_tokens
+
+    return client.beta.chat.completions.parse(**completion_kwargs)
 
 
 judges_lib.base.get_completion = patched_get_completion

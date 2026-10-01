@@ -1,3 +1,2 @@
-reproduce/results/**/*.jsonl filter=lfs diff=lfs merge=lfs -text
 reproduce/results/**/*.jsonl.gz filter=lfs diff=lfs merge=lfs -text
 reproduce/results/**/*.parquet filter=lfs diff=lfs merge=lfs -text

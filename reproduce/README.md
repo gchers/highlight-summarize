@@ -69,3 +69,9 @@ After running these, you'll be able to look at the results via the jupyter noteb
 
 In our experiments, we also used a DeBERTaV3 model as highlighter, fine-tuned on the RepliQA dataset.
 To repeat this fine-tuning, run `python qa-extractor-finetune.py`.
+
+### Security analysis (LLMail-Inject)
+
+`security-analysis.ipynb` runs the successful Scenario 2 attack prompts from the
+[LLMail-Inject dataset](https://huggingface.co/datasets/microsoft/llmail-inject-challenge) against Vanilla RAG and H&S,
+using the scenario's 20 benign emails, from the same dataset, as the retrieved context.

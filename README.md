@@ -29,7 +29,7 @@ To add support for an additional client, edit `openai_client()` at `highlight_su
 
 ## H&S Demo app
 
-<img width="741" height="599" alt="image" src="https://github.com/user-attachments/assets/4334aac5-8e3c-44da-a02a-e704423a06d0" />
+<img width="741" height="599" alt="image" src="demo/screenshot.png" />
 
 
 The demo app implements a chatbot that answers questions about H&S (based on our paper)

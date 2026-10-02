@@ -1,0 +1,60 @@
+# GPT-5.4 rerun, isolated from the published GPT-4.1-mini results.
+base_experiment: &base
+    results_dir: "results/gpt-5.4"
+    temperature: 0.2
+    default_model_name: &default_model "gpt-5.4"
+
+experiments:
+    rag_experiment:
+        <<: *base
+        pipeline: "QAEvaluator"
+        model_name: *default_model
+
+    hsbaseline_experiment:
+        <<: *base
+        pipeline: "HSBaseline"
+        highlighter_model_name: *default_model
+        summarizer_model_name: *default_model
+
+    hsstructured_experiment:
+        <<: *base
+        pipeline: "HSStructuredHighlighter"
+        highlighter_model_name: *default_model
+        summarizer_model_name: *default_model
+
+    hsspan_experiment:
+        <<: *base
+        pipeline: "HSSpanHighlighter"
+        highlighter_model_name: *default_model
+        summarizer_model_name: *default_model
+
+    hsbert_experiment:
+        <<: *base
+        pipeline: "HSBERTExtractor"
+        highlighter_model_name: "models/microsoft-deberta-v3-base-repliqa"
+        summarizer_model_name: *default_model
+
+    hsbert_experiment_squad:
+        <<: *base
+        pipeline: "HSBERTExtractor"
+        highlighter_model_name: "deepset/deberta-v3-base-squad2"
+        summarizer_model_name: *default_model
+
+    hstwosteps_experiment:
+        <<: *base
+        pipeline: "HSTwoStepsHighlighter"
+        highlighter_model_name: *default_model
+        summarizer_model_name: *default_model
+
+datasets:
+  - repliqa_3
+  - bioasq
+
+judges_config:
+    model_name: "gpt-5.4"
+    judges:
+      - PollMultihopCorrectness
+      - ReliableCIRelevance
+      - MTBenchChatBotResponseQuality
+
+max_threads: 30

@@ -2,7 +2,7 @@ import judges as judges_lib
 from typing import Any
 from pydantic import BaseModel
 
-from .utils import NOANSWER_PRED, query_llm, openai_client
+from .utils import NOANSWER_PRED, query_llm, client
 
 
 class LLMJudgeResponse(BaseModel):
@@ -18,7 +18,7 @@ class LLMJudge:
         judge_name,
         correct=10,
         incorrect=1,
-        factors=[],
+        factors=None,
     ):
         """Initialize the judge with a name, correctness ratings, and factors.
 
@@ -31,7 +31,7 @@ class LLMJudge:
         self.judge_name = judge_name
         self.correct = correct
         self.incorrect = incorrect
-        self.factors = factors
+        self.factors = factors if factors is not None else []
 
     def _format_response(
         self, responses: dict[str, LLMJudgeResponse]
@@ -64,8 +64,8 @@ class LLMJudge:
         # Call judge.
         judgement = self.call_judge(
             input=example["question"],
-            output=example["answer"],
-            expected=example["answer_pred"],
+            output=example["answer_pred"],
+            expected=example["answer"],
         )
 
         return self._format_response(judgement)
@@ -84,25 +84,31 @@ def patched_get_completion(
     messages: list[dict[str, str]],
     model: str,
     temperature: float,
-    max_tokens: int,
-    seed: int,
+    max_tokens: int | None,
+    seed: int | None,
     response_format: dict | None = None,
     response_model=None,
 ):
-    """Monkey-patch the get_completion method to use the openai_client."""
+    """Monkey-patch the get_completion method to use the shared client."""
     if response_model is not None:
         raise ValueError(
             "response_model is not supported in this context. Use response_format instead."
         )
 
-    return openai_client().beta.chat.completions.parse(
+    completion_kwargs: dict[str, Any] = dict(
         model=model,
         messages=messages,  # type: ignore
         temperature=temperature,
-        max_tokens=max_tokens,
         seed=seed,
         response_format=response_format,  # type: ignore
     )
+    if max_tokens is not None:
+        token_parameter = (
+            "max_completion_tokens" if model.startswith("gpt-5") else "max_tokens"
+        )
+        completion_kwargs[token_parameter] = max_tokens
+
+    return client.beta.chat.completions.parse(**completion_kwargs)
 
 
 judges_lib.base.get_completion = patched_get_completion

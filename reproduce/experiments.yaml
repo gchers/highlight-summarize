@@ -1,6 +1,6 @@
 # Configuration that applies to all experiments (unless overridden).
 base_experiment: &base
-    results_dir: "results/"
+    results_dir: "results/gpt-4.1-mini"
     temperature: 0.2
     default_model_name: &default_model "gpt-4.1-mini"
 

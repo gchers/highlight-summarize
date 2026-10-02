@@ -1,22 +1,32 @@
-import sys
 import streamlit as st
+from textwrap import dedent
 from pydantic import BaseModel
 
 from utils import sidebar, load_content, log
 from highlight_summarize.hs import HSStructuredHighlighter, HSBaselinePrediction
+from highlight_summarize.utils import NOANSWER_PRED, FAILED_PRED
 
 #################################
 # H&S and data.
 #################################
 hs = HSStructuredHighlighter(
-        highlighter_model_name="gpt-4.1-mini",
-        summarizer_model_name="gpt-4.1-mini",
-        min_highlighted_words=15,
-    )
+    highlighter_model_name="gpt-4.1-mini",
+    summarizer_model_name="gpt-4.1-mini",
+    min_highlighted_words=15,
+    summarizer_prompt=dedent(
+        """You are given highlighted text from a document; the text extract is relevant to some
+        question which you don't know. Follow these steps:
+        1. Guess what question the text extract is trying to answer (you will provide 5-10 guesses).
+        2. Then, summarize the text extract as an answer to the most likely guessed question.
+        Text extract:
+        {text_extract}
+        """
+    ),
+)
 
 # "RAG" document.
 doc = load_content("highlight_summarize.txt").strip()
-if not doc.strip:
+if not doc.strip():
     raise ValueError("The document is empty. Please provide a valid document.")
 detective = load_content("detective.png", mode="rb")
 
@@ -29,6 +39,7 @@ st.caption("🚀 A demo of H&S, which can answer questions about H&S!")
 sidebar()
 # show_internals = st.toggle("Show the internal process of H&S", value=False)
 show_internals = True
+
 
 class Msg(BaseModel):
     role: str
@@ -46,11 +57,20 @@ class Msg(BaseModel):
         if not self.full_response:
             raise ValueError("No full response to display.")
         md = "Psst! Here's what is happening inside H&S:\n\n"
-        texts = "\n".join(self.full_response.highlighter_text_extracts) if self.full_response.highlighter_text_extracts else None
+        texts = (
+            "\n".join(self.full_response.highlighter_text_extracts)
+            if self.full_response.highlighter_text_extracts
+            else None
+        )
+        guessed_qs = (
+            ", ".join(self.full_response.summarizer_llm_guessed_questions)
+            if self.full_response.summarizer_llm_guessed_questions
+            else None
+        )
         lines = [
             f"**Highlighter Output:** {texts}.",
-            f"**What question the summarizer thinks was asked:** {self.full_response.summarizer_llm_guessed_question}.",
-            f"**Summarizer response:** {self.full_response.answer_pred}."
+            f"**What question(s) the summarizer thinks were asked:** {guessed_qs}.",
+            f"**Summarizer response:** {self.full_response.answer_pred}.",
         ]
         for line in lines:
             md += f":blue[{line}]\n\n"
@@ -61,8 +81,10 @@ class Msg(BaseModel):
 # Initialize session state.
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        Msg(role="assistant",
-            content="Hi! I can answer questions about H&S. If there's something I don't know, I'll just say so. How can I help you?")
+        Msg(
+            role="assistant",
+            content="Hi! I can answer questions about H&S. If there's something I don't know, I'll just say so. How can I help you?",
+        )
     ]
 
 # Display chat history.
@@ -74,14 +96,13 @@ if prompt := st.chat_input():
     msg.display()
     st.session_state.messages.append(msg)
 
-    response = hs.call_model(
-        context_str=doc,
-        question_str=prompt
-    )
+    response = hs.call_model(context_str=doc, question_str=prompt)
 
     # Handle the response.
-    if not response.answer_pred or response.answer_pred == "UNANSWERABLE":
+    if not response.answer_pred or response.answer_pred == NOANSWER_PRED:
         answer = "I don't know the answer to that question. I can only answer based on my knowledge about H&S."
+    elif response.answer_pred == FAILED_PRED:
+        answer = "Sorry, something went wrong while processing your question."
     else:
         answer = response.answer_pred
     msg = Msg(role="assistant", content=answer, full_response=response)
@@ -89,8 +110,10 @@ if prompt := st.chat_input():
     st.session_state.messages.append(msg)
 
     # Logging.
-    log({
-        "question": prompt,
-        "answer": response.answer_pred,
-        "response": response.model_dump(),
-    })
+    log(
+        {
+            "question": prompt,
+            "answer": response.answer_pred,
+            "response": response.model_dump(),
+        }
+    )
